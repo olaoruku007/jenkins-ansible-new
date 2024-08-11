@@ -1,6 +1,6 @@
 ---
 -  name: Installing tomcat 9
-   hosts: local
+   hosts: Dev
    become: yes
 
    roles:
