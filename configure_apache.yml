@@ -1,0 +1,69 @@
+---
+- name: Configure Apache2 to listen on a specific IP address and port 80
+  hosts: Dev
+  become: yes
+  vars:
+    apache_listen_ip: "10.1.16.162"  # Replace with your desired IP address
+    apache_listen_port: 80
+  tasks:
+    - name: Ensure Apache2 is installed
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Backup original ports.conf
+      copy:
+        src: /etc/apache2/ports.conf
+        dest: /etc/apache2/ports.conf.bak
+        backup: yes
+        remote_src: yes    
+
+    - name: Configure Apache2 to listen on a specific IP address and port
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        regexp: '^Listen'
+        line: "Listen {{ apache_listen_ip }}:{{ apache_listen_port }}"
+        state: present
+
+    - name: Backup original 000-default.conf
+      copy:
+        src: /etc/apache2/sites-available/000-default.conf
+        dest: /etc/apache2/sites-available/000-default.conf.bak
+        remote_src: yes  
+        backup: yes
+
+    - name: Configure 000-default.conf to use the specific IP address and port
+      blockinfile:
+        path: /etc/apache2/sites-available/000-default.conf
+        block: |
+          <VirtualHost {{ apache_listen_ip }}:{{ apache_listen_port }}>
+            ServerName 10.1.16.162
+            DocumentRoot /var/www/html
+            ErrorLog ${APACHE_LOG_DIR}/error.log
+            CustomLog ${APACHE_LOG_DIR}/access.log combined
+          </VirtualHost>
+      
+
+    - name: Disable default VirtualHost
+      file:
+        path: /etc/apache2/sites-enabled/000-default.conf
+        state: absent
+
+    - name: Enable customized VirtualHost
+      file:
+        src: /etc/apache2/sites-available/000-default.conf
+        dest: /etc/apache2/sites-enabled/000-default.conf
+        state: link
+        force: yes
+
+    - name: Restart Apache2
+      service:
+        name: apache2
+        state: restarted
+
+    - name: Ensure MySQL is running
+      service:
+        name: mysql
+        state: restarted
+

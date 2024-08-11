@@ -1,0 +1,114 @@
+---
+- name: Install LAMP stack on Ubuntu Server
+  hosts: Dev
+  become: yes
+
+  vars_files:
+    - mysql_vars.yml
+
+  tasks:
+    - name: Update and upgrade packages
+      apt: 
+        update_cache: yes
+        upgrade: yes
+
+    - name: Get software for apt repository management
+      apt:
+        name: 
+          - python3-apt
+          - python3-pycurl
+        state: present      
+
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Ensure Apache is running and enabled
+      service: 
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Install MySQL Server
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Ensure MySQL is running and enabled
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Install PHP and related modules
+      apt: 
+        name: "{{ item }}"
+        state: present
+
+      with_items:
+        - php
+        - libapache2-mod-php
+        - php-mysql
+        - python3-mysqldb
+          
+
+    - name: Restart Apache to  apply PHP module
+      service:
+        name: apache2
+        state: restarted  
+
+    - name: Activate PHP web page
+      copy: 
+        content: "<?php phpinfo(); ?>"
+        dest: /var/www/html/info.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Ensure UFW is installed 
+      apt:
+        name: ufw
+        state: present
+
+    - name: Allow HTTP through the firewall
+      command: ufw allow 80/tcp
+
+    - name: Allow MySQL port
+      command: ufw allow 3306/tcp
+      
+     
+#    - name: Enable UFW
+#      command: ufw enable
+        
+
+    - name: Restart Apache to  apply PHP module
+      service:
+        name: apache2
+        state: restarted
+ 
+    - name: Create MySQL database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+      
+
+    - name: Create MySQL user
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        host: "{{ wp_db_host }}"
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        state: present
+        column_case_sensitive: false
+
+    
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mysql
+        state: restarted 

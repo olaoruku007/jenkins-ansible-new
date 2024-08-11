@@ -1,0 +1,12 @@
+---
+- name: Update known_hosts file for all inventory hosts
+  hosts: Dev
+  become: yes
+  gather_facts: false
+
+  tasks: 
+  - name: Add public key to authorized_keys
+    authorized_key:
+      user: ubuntu
+      state: present
+      key: "{{ lookup('file', '/home/ec2-user/.ssh/id_rsa.pub') }}"

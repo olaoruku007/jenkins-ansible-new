@@ -1,0 +1,7 @@
+---
+-  name: Installing tomcat 9
+   hosts: local
+   become: yes
+
+   roles:
+     - Ansible-roles/tomcat

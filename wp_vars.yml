@@ -1,0 +1,7 @@
+mysql_root_password: "adeola"
+wordpress_db_name: "wp"
+wordpress_db_user: "admin"
+wordpress_db_password: "adeola"
+
+
+
